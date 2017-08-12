@@ -2,6 +2,7 @@
 #define PID_H
 
 class PID {
+
 public:
   /*
   * Errors
@@ -12,7 +13,7 @@ public:
 
   /*
   * Coefficients
-  */ 
+  */
   double Kp;
   double Ki;
   double Kd;

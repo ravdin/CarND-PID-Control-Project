@@ -1,4 +1,7 @@
 #include "PID.h"
+#include <math.h>
+#include <vector>
+#include <numeric>
 
 using namespace std;
 

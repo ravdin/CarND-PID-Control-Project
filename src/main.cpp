@@ -2,13 +2,16 @@
 #include <iostream>
 #include "json.hpp"
 #include "PID.h"
+#include "Twiddler.h"
 #include <math.h>
 
 // for convenience
 using json = nlohmann::json;
+using namespace std;
 
 // For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
+const bool DO_TWIDDLE = false;
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
@@ -32,14 +35,36 @@ int main()
 {
   uWS::Hub h;
 
-  PID pid;
+  PID pid_s, pid_t;
+  vector<double> p_s { 0.066853, 0.0001, 3.0 };
+  vector<double> dp_s { 0.01, 0.00001, 0.5 };
+  vector<double> p_t { 1, 0, 0 };
+  Twiddler twiddler;
+  twiddler.init(p_s, dp_s);
   // TODO: Initialize the pid variable.
-  pid.Init(0.065, 0.0001, 3.0);
+  pid_s.Init(p_s[0], p_s[1], p_s[2]);
+  pid_t.Init(p_t[0], p_t[1], p_t[2]);
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&pid_s, &pid_t, &twiddler](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
+
+    if (DO_TWIDDLE && twiddler.stepsCompleted()) {
+      twiddler.twiddleParams(pid_s);
+
+      std::string msg = "42[\"reset\",{}]";
+      ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+      return;
+    }
+
+    if (DO_TWIDDLE && twiddler.isOptimized()) {
+      cout << "Parameters found!" << endl;
+      cout << "Parameters: " << twiddler.p[0] << ", " << twiddler.p[1] << ", " << twiddler.p[2] << endl;
+      cout << "DP: " << twiddler.dp[0] << ", " << twiddler.dp[1] << ", " << twiddler.dp[2] << endl;
+      exit(0);
+    }
+
     if (length && length > 2 && data[0] == '4' && data[1] == '2')
     {
       auto s = hasData(std::string(data).substr(0, length));
@@ -51,22 +76,31 @@ int main()
           double cte = std::stod(j[1]["cte"].get<std::string>());
           double speed = std::stod(j[1]["speed"].get<std::string>());
           double angle = std::stod(j[1]["steering_angle"].get<std::string>());
-          double steer_value;
+          double steer_value, throttle_value;
           /*
           * TODO: Calcuate steering value here, remember the steering value is
           * [-1, 1].
           * NOTE: Feel free to play around with the throttle and speed. Maybe use
           * another PID controller to control the speed!
           */
-          pid.UpdateError(cte);
-          steer_value = pid.TotalError();
+          pid_s.UpdateError(cte);
+          steer_value = pid_s.TotalError();
+          steer_value = fmax(-1.0, fmin(1.0, steer_value));
+
+          double speed_error = 50 - speed;
+          pid_t.UpdateError(speed_error);
+          throttle_value = -pid_t.TotalError();
+
+          if (DO_TWIDDLE) {
+            twiddler.doStep(pid_s.TotalError());
+          }
 
           // DEBUG
           std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
+          msgJson["throttle"] = throttle_value;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
