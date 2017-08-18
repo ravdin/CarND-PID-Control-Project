@@ -6,6 +6,9 @@
 
 class Twiddler {
 
+    std::vector<double> p;
+    std::vector<double> dp;
+    std::vector<double> weighted_dp;
     double totalErr;
     double bestErr;
     const double tolerance = 0.1;
@@ -15,12 +18,10 @@ class Twiddler {
     int step;
     int currentParam;
     int iteration_count;
-    const int max_iterations = 20;
+    const int max_iterations = 10;
 
 public:
 
-      std::vector<double> p;
-      std::vector<double> dp;
 
   Twiddler();
 
@@ -41,6 +42,8 @@ public:
   bool isOptimized();
 
   void twiddleParams(PID::PID &pid);
+
+  void outputParams();
 };
 
 #endif

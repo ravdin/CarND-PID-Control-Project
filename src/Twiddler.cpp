@@ -1,6 +1,7 @@
 #include "Twiddler.h"
 #include "PID.h"
 #include <math.h>
+#include <iostream>
 #include <vector>
 #include <numeric>
 
@@ -11,6 +12,8 @@ Twiddler::Twiddler() {
   currentParam = 0;
   isInitialized = false;
   isIncremement = false;
+  iteration_count = 0;
+  weighted_dp = vector<double> { 1.0, 1.0, 1.0 };
 }
 
 Twiddler::~Twiddler() {}
@@ -32,7 +35,6 @@ void Twiddler::decrement() {
   p[currentParam] -= 2 * dp[currentParam];
   step = 0;
   totalErr = 0;
-  iteration_count = 0;
 }
 
 void Twiddler::doStep(double cte) {
@@ -58,14 +60,15 @@ bool Twiddler::stepsCompleted() {
 }
 
 bool Twiddler::isOptimized() {
-  return accumulate(dp.begin(), dp.end(), 0.0) <= tolerance || iteration_count > max_iterations;
+  return accumulate(weighted_dp.begin(), weighted_dp.end(), 0.0) <= tolerance || iteration_count > max_iterations;
 }
 
 void Twiddler::twiddleParams(PID &pid) {
   if (isInitialized) {
     if (totalErr < bestErr) {
       bestErr = totalErr;
-      dp[currentParam] *= 1.1;
+      weighted_dp[currentParam] *= 1.1;
+      dp[currentParam] *= weighted_dp[currentParam];
       reset();
     }
     else if (isIncremement) {
@@ -73,7 +76,8 @@ void Twiddler::twiddleParams(PID &pid) {
     }
     else {
       increment();
-      dp[currentParam] *= 0.9;
+      weighted_dp[currentParam] *= 0.9;
+      dp[currentParam] *= weighted_dp[currentParam];
       reset();
     }
     pid.Init(p[0], p[1], p[2]);
@@ -83,4 +87,11 @@ void Twiddler::twiddleParams(PID &pid) {
     reset();
     increment();
   }
+
+  outputParams();
+}
+
+void Twiddler::outputParams() {
+    cout << "Parameters: " << p[0] << ", " << p[1] << ", " << p[2] << endl;
+    cout << "DP: " << dp[0] << ", " << dp[1] << ", " << dp[2] << endl;
 }

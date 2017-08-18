@@ -38,9 +38,10 @@ int main()
   PID pid_s, pid_t;
   vector<double> p_s { 0.066853, 0.0001, 3.0 };
   vector<double> dp_s { 0.01, 0.00001, 0.5 };
-  vector<double> p_t { 1, 0, 0 };
+  vector<double> p_t { 1.001, 0, 0 };
+  vector<double> dp_t { 0.0001, 0.001, 0.001 };
   Twiddler twiddler;
-  twiddler.init(p_s, dp_s);
+  twiddler.init(p_t, dp_t);
   // TODO: Initialize the pid variable.
   pid_s.Init(p_s[0], p_s[1], p_s[2]);
   pid_t.Init(p_t[0], p_t[1], p_t[2]);
@@ -51,8 +52,8 @@ int main()
     // The 2 signifies a websocket event
 
     if (DO_TWIDDLE && twiddler.stepsCompleted()) {
-      twiddler.twiddleParams(pid_s);
-
+      twiddler.twiddleParams(pid_t);
+      twiddler.outputParams();
       std::string msg = "42[\"reset\",{}]";
       ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
       return;
@@ -60,8 +61,7 @@ int main()
 
     if (DO_TWIDDLE && twiddler.isOptimized()) {
       cout << "Parameters found!" << endl;
-      cout << "Parameters: " << twiddler.p[0] << ", " << twiddler.p[1] << ", " << twiddler.p[2] << endl;
-      cout << "DP: " << twiddler.dp[0] << ", " << twiddler.dp[1] << ", " << twiddler.dp[2] << endl;
+      twiddler.outputParams();
       exit(0);
     }
 
@@ -92,17 +92,17 @@ int main()
           throttle_value = -pid_t.TotalError();
 
           if (DO_TWIDDLE) {
-            twiddler.doStep(pid_s.TotalError());
+            twiddler.doStep(pid_t.TotalError());
           }
 
           // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+          //std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
