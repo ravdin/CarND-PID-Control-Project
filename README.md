@@ -1,7 +1,25 @@
 # CarND-Controls-PID
 Self-Driving Car Engineer Nanodegree Program
 
----
+--
+
+## Rubric Discussion Points
+
+This projects implements a PID controller.  A PID controller continuously calculates the difference between a desired setpoint and a measured process variable, and applies a correction as follows:
+
+* P: Proportional correction based on present values.  For example, if the error is large, then the control output will also be large.  This control has a tendency to overshoot.
+
+* I: The integral component accounts for past values and accumulates over time.  This counteracts systemic bias that may allow errors to accumulate over time.
+
+* D: The derivative component aims to reduce the rate of change of the errors to zero.  This has a dampening effect on oscillation as the car adjusts to the center line.
+
+Source: [wikipedia](https://en.wikipedia.org/wiki/PID_controller)
+
+## Twiddler
+
+I introduced a class `Twiddler` to the project to help fine tune the parameters.  The main idea was to allow the simulator to repeatedly run for a set number of steps, change the parameters, and keep the parameters with the best performance.  The best performance was measured by a run with the lowest error.
+
+In a nutshell, the algorithm is to fiddle with the parameter by a small amount (set in the `dp` vector).  If the run has a lower error measurement than the best run so far, then we'll keep that parameter and slightly increase `dp` (allowing the search to be a bit wider with the next run).  If the current run is not an improvement over the best known run, reduce `dp`.  When `dp` has reduced enough, end the search.
 
 ## Dependencies
 
@@ -19,7 +37,7 @@ Self-Driving Car Engineer Nanodegree Program
   * Run either `./install-mac.sh` or `./install-ubuntu.sh`.
   * If you install from source, checkout to commit `e94b6e1`, i.e.
     ```
-    git clone https://github.com/uWebSockets/uWebSockets 
+    git clone https://github.com/uWebSockets/uWebSockets
     cd uWebSockets
     git checkout e94b6e1
     ```
@@ -33,7 +51,7 @@ There's an experimental patch for windows in this [PR](https://github.com/udacit
 1. Clone this repo.
 2. Make a build directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
-4. Run it: `./pid`. 
+4. Run it: `./pid`.
 
 ## Editor Settings
 
@@ -43,50 +61,3 @@ using the following settings:
 
 * indent using spaces
 * set tab width to 2 spaces (keeps the matrices in source code aligned)
-
-## Code Style
-
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
-
-## Project Instructions and Rubric
-
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
-
-More information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/e8235395-22dd-4b87-88e0-d108c5e5bbf4/concepts/6a4d8d42-6a04-4aa6-b284-1697c0fd6562)
-for instructions and the project rubric.
-
-## Hints!
-
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
-
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
-
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
